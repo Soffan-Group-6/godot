@@ -232,6 +232,15 @@
 
 #include "servers/rendering/rendering_server_default.h"
 
+bool append_utf16_coverage[35] = {false};
+
+void report_branch_coverage(bool branch_flags[], int flag_amount, const char name[]) {
+    printf("\n- %s Branch Coverage:\n", name);
+    for (int i = 0; i < flag_amount; i++) {
+        printf("Branch %2d: %s\n", i + 1, branch_flags[i] ? "taken" : "not taken");
+    }
+}
+
 int test_main(int argc, char *argv[]) {
 	bool run_tests = true;
 
@@ -301,7 +310,9 @@ int test_main(int argc, char *argv[]) {
 		delete[] doctest_args;
 	}
 
-	return test_context.run();
+	int run_num = test_context.run();
+	report_branch_coverage(append_utf16_coverage, 35, "String::append_utf16");
+	return run_num;
 }
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////

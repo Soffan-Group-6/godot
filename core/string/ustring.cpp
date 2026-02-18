@@ -1999,7 +1999,7 @@ CharString String::utf8(Vector<uint8_t> *r_ch_length_map) const {
 	return utf8s;
 }
 
-extern bool append_utf16_coverage[35];
+extern bool append_utf16_coverage[];
 
 Error String::append_utf16(const char16_t *p_utf16, int p_len, bool p_default_little_endian) {
 	if (!p_utf16) {
