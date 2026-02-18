@@ -1999,9 +1999,14 @@ CharString String::utf8(Vector<uint8_t> *r_ch_length_map) const {
 	return utf8s;
 }
 
+extern bool append_utf16_coverage[35];
+
 Error String::append_utf16(const char16_t *p_utf16, int p_len, bool p_default_little_endian) {
 	if (!p_utf16) {
+		append_utf16_coverage[0] = true;
 		return ERR_INVALID_DATA;
+	} else {
+		append_utf16_coverage[1] = true;
 	}
 
 	String aux;
@@ -2016,20 +2021,33 @@ Error String::append_utf16(const char16_t *p_utf16, int p_len, bool p_default_li
 #endif
 	/* HANDLE BOM (Byte Order Mark) */
 	if (p_len < 0 || p_len >= 1) {
+		append_utf16_coverage[2] = true;
 		bool has_bom = false;
 		if (uint16_t(p_utf16[0]) == 0xfeff) { // correct BOM, read as is
+			append_utf16_coverage[4] = true;
 			has_bom = true;
 			byteswap = false;
 		} else if (uint16_t(p_utf16[0]) == 0xfffe) { // backwards BOM, swap bytes
+			append_utf16_coverage[5] = true;
 			has_bom = true;
 			byteswap = true;
+		} else {
+			append_utf16_coverage[6] = true;
 		}
 		if (has_bom) {
+			append_utf16_coverage[7] = true;
 			if (p_len >= 0) {
+				append_utf16_coverage[9] = true;
 				p_len -= 1;
+			} else {
+				append_utf16_coverage[10] = true;
 			}
 			p_utf16 += 1;
+		} else {
+			append_utf16_coverage[8] = true;
 		}
+	} else {
+		append_utf16_coverage[3] = true;
 	}
 
 	bool decode_error = false;
@@ -2039,23 +2057,33 @@ Error String::append_utf16(const char16_t *p_utf16, int p_len, bool p_default_li
 		uint32_t c_prev = 0;
 		bool skip = false;
 		while (ptrtmp != ptrtmp_limit && *ptrtmp) {
+			append_utf16_coverage[11] = true;
+
 			uint32_t c = (byteswap) ? BSWAP16(*ptrtmp) : *ptrtmp;
 
 			if ((c & 0xfffffc00) == 0xd800) { // lead surrogate
+				append_utf16_coverage[12] = true;
 				if (skip) {
+					append_utf16_coverage[15] = true;
 					print_unicode_error(vformat("Unpaired lead surrogate (%x [trail?] %x)", c_prev, c));
 					decode_error = true;
+				} else {
+					append_utf16_coverage[16] = true;
 				}
 				skip = true;
 			} else if ((c & 0xfffffc00) == 0xdc00) { // trail surrogate
+				append_utf16_coverage[13] = true;
 				if (skip) {
+					append_utf16_coverage[17] = true;
 					str_size--;
 				} else {
+					append_utf16_coverage[18] = true;
 					print_unicode_error(vformat("Unpaired trail surrogate (%x [lead?] %x)", c_prev, c));
 					decode_error = true;
 				}
 				skip = false;
 			} else {
+				append_utf16_coverage[14] = true;
 				skip = false;
 			}
 
@@ -2066,14 +2094,20 @@ Error String::append_utf16(const char16_t *p_utf16, int p_len, bool p_default_li
 		}
 
 		if (skip) {
+			append_utf16_coverage[19] = true;
 			print_unicode_error(vformat("Unpaired lead surrogate (%x [eol])", c_prev));
 			decode_error = true;
+		} else {
+			append_utf16_coverage[20] = true;
 		}
 	}
 
 	if (str_size == 0) {
+		append_utf16_coverage[21] = true;
 		clear();
 		return OK; // empty string
+	} else {
+		append_utf16_coverage[22] = true;
 	}
 
 	const int prev_length = length();
@@ -2084,21 +2118,30 @@ Error String::append_utf16(const char16_t *p_utf16, int p_len, bool p_default_li
 	bool skip = false;
 	uint32_t c_prev = 0;
 	while (cstr_size) {
+		append_utf16_coverage[23] = true;
 		uint32_t c = (byteswap) ? BSWAP16(*p_utf16) : *p_utf16;
 
 		if ((c & 0xfffffc00) == 0xd800) { // lead surrogate
+			append_utf16_coverage[24] = true;
 			if (skip) {
+				append_utf16_coverage[27] = true;
 				*(dst++) = c_prev; // unpaired, store as is
+			} else {
+				append_utf16_coverage[28] = true;
 			}
 			skip = true;
 		} else if ((c & 0xfffffc00) == 0xdc00) { // trail surrogate
+			append_utf16_coverage[25] = true;
 			if (skip) {
+				append_utf16_coverage[29] = true;
 				*(dst++) = (c_prev << 10UL) + c - ((0xd800 << 10UL) + 0xdc00 - 0x10000); // decode pair
 			} else {
+				append_utf16_coverage[30] = true;
 				*(dst++) = c; // unpaired, store as is
 			}
 			skip = false;
 		} else {
+			append_utf16_coverage[26] = true;
 			*(dst++) = c;
 			skip = false;
 		}
@@ -2109,12 +2152,17 @@ Error String::append_utf16(const char16_t *p_utf16, int p_len, bool p_default_li
 	}
 
 	if (skip) {
+		append_utf16_coverage[31] = true;
 		*(dst++) = c_prev;
+	} else {
+		append_utf16_coverage[32] = true;
 	}
 
 	if (decode_error) {
+		append_utf16_coverage[33] = true;
 		return ERR_PARSE_ERROR;
 	} else {
+		append_utf16_coverage[34] = true;
 		return OK;
 	}
 }
