@@ -30,6 +30,8 @@
 
 #include "animation_library_editor.h"
 
+extern bool file_popup_selected_coverage[];
+
 #include "core/io/resource_loader.h"
 #include "core/string/ustring.h"
 #include "core/templates/vector.h"
@@ -156,36 +158,55 @@ void AnimationLibraryEditor::_file_popup_selected(int p_id) {
 	Ref<AnimationLibrary> al = mixer->get_animation_library(file_dialog_library);
 	Ref<Animation> anim;
 	if (file_dialog_animation != StringName()) {
+		file_popup_selected_coverage[0] = true;
 		anim = al->get_animation(file_dialog_animation);
 		ERR_FAIL_COND(anim.is_null());
+	} else {
+		file_popup_selected_coverage[1] = true;
 	}
 	switch (p_id) {
 		case FILE_MENU_SAVE_LIBRARY: {
+			file_popup_selected_coverage[2] = true;
 			if (al->get_path().is_resource_file() && !FileAccess::exists(al->get_path() + ".import")) {
+				file_popup_selected_coverage[3] = true;
 				EditorNode::get_singleton()->save_resource(al);
 				break;
+			} else {
+				file_popup_selected_coverage[4] = true;
 			}
 			[[fallthrough]];
 		}
 		case FILE_MENU_SAVE_AS_LIBRARY: {
+			file_popup_selected_coverage[5] = true;
 			// Check if we're allowed to save this
 			{
 				String al_path = al->get_path();
 				if (!al_path.is_resource_file()) {
+					file_popup_selected_coverage[6] = true;
 					int srpos = al_path.find("::");
 					if (srpos != -1) {
+						file_popup_selected_coverage[8] = true;
 						String base = al_path.substr(0, srpos);
 						if (!get_tree()->get_edited_scene_root() || get_tree()->get_edited_scene_root()->get_scene_file_path() != base) {
+							file_popup_selected_coverage[10] = true;
 							error_dialog->set_text(TTR("This animation library can't be saved because it does not belong to the edited scene. Make it unique first."));
 							error_dialog->popup_centered();
 							return;
+						} else {
+							file_popup_selected_coverage[11] = true;
 						}
+					} else {
+						file_popup_selected_coverage[9] = true;
 					}
 				} else {
+					file_popup_selected_coverage[7] = true;
 					if (FileAccess::exists(al_path + ".import")) {
+						file_popup_selected_coverage[12] = true;
 						error_dialog->set_text(TTR("This animation library can't be saved because it was imported from another file. Make it unique first."));
 						error_dialog->popup_centered();
 						return;
+					} else {
+						file_popup_selected_coverage[13] = true;
 					}
 				}
 			}
@@ -193,8 +214,10 @@ void AnimationLibraryEditor::_file_popup_selected(int p_id) {
 			file_dialog->set_file_mode(EditorFileDialog::FILE_MODE_SAVE_FILE);
 			file_dialog->set_title(TTR("Save Library"));
 			if (al->get_path().is_resource_file()) {
+				file_popup_selected_coverage[14] = true;
 				file_dialog->set_current_path(al->get_path());
 			} else {
+				file_popup_selected_coverage[15] = true;
 				file_dialog->set_current_file(String(file_dialog_library) + ".res");
 			}
 			file_dialog->clear_filters();
@@ -208,6 +231,7 @@ void AnimationLibraryEditor::_file_popup_selected(int p_id) {
 			file_dialog_action = FILE_DIALOG_ACTION_SAVE_LIBRARY;
 		} break;
 		case FILE_MENU_MAKE_LIBRARY_UNIQUE: {
+			file_popup_selected_coverage[16] = true;
 			StringName lib_name = file_dialog_library;
 			List<StringName> animation_list;
 
@@ -216,7 +240,10 @@ void AnimationLibraryEditor::_file_popup_selected(int p_id) {
 			for (const StringName &animation_name : animation_list) {
 				Ref<Animation> animation = al->get_animation(animation_name);
 				if (EditorNode::get_singleton()->is_resource_read_only(animation)) {
+					file_popup_selected_coverage[17] = true;
 					animation = animation->duplicate();
+				} else {
+					file_popup_selected_coverage[18] = true;
 				}
 				ald->add_animation(animation_name, animation);
 			}
@@ -235,31 +262,42 @@ void AnimationLibraryEditor::_file_popup_selected(int p_id) {
 
 		} break;
 		case FILE_MENU_EDIT_LIBRARY: {
+			file_popup_selected_coverage[19] = true;
 			EditorNode::get_singleton()->push_item(al.ptr());
 		} break;
 
 		case FILE_MENU_SAVE_ANIMATION: {
+			file_popup_selected_coverage[20] = true;
 			if (anim->get_path().is_resource_file() && !FileAccess::exists(anim->get_path() + ".import")) {
+				file_popup_selected_coverage[21] = true;
 				EditorNode::get_singleton()->save_resource(anim);
 				break;
+			} else {
+				file_popup_selected_coverage[22] = true;
 			}
 			[[fallthrough]];
 		}
 		case FILE_MENU_SAVE_AS_ANIMATION: {
+			file_popup_selected_coverage[23] = true;
 			// Check if we're allowed to save this
 			{
 				String anim_path = al->get_path();
 				if (!anim_path.is_resource_file()) {
+					file_popup_selected_coverage[24] = true;
 					int srpos = anim_path.find("::");
 					if (srpos != -1) {
+						file_popup_selected_coverage[26] = true;
 						String base = anim_path.substr(0, srpos);
 						if (!get_tree()->get_edited_scene_root() || get_tree()->get_edited_scene_root()->get_scene_file_path() != base) {
 							error_dialog->set_text(TTR("This animation can't be saved because it does not belong to the edited scene. Make it unique first."));
 							error_dialog->popup_centered();
 							return;
 						}
+					} else {
+						file_popup_selected_coverage[27] = true;
 					}
 				} else {
+					file_popup_selected_coverage[25] = true;
 					if (FileAccess::exists(anim_path + ".import")) {
 						error_dialog->set_text(TTR("This animation can't be saved because it was imported from another file. Make it unique first."));
 						error_dialog->popup_centered();
@@ -286,6 +324,7 @@ void AnimationLibraryEditor::_file_popup_selected(int p_id) {
 			file_dialog_action = FILE_DIALOG_ACTION_SAVE_ANIMATION;
 		} break;
 		case FILE_MENU_MAKE_ANIMATION_UNIQUE: {
+			file_popup_selected_coverage[28] = true;
 			StringName anim_name = file_dialog_animation;
 
 			Ref<Animation> animd = anim->duplicate();
@@ -303,6 +342,7 @@ void AnimationLibraryEditor::_file_popup_selected(int p_id) {
 			update_tree();
 		} break;
 		case FILE_MENU_EDIT_ANIMATION: {
+			file_popup_selected_coverage[29] = true;
 			EditorNode::get_singleton()->push_item(anim.ptr());
 		} break;
 	}
