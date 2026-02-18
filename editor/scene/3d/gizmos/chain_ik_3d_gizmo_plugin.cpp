@@ -28,6 +28,8 @@
 /* SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.                 */
 /**************************************************************************/
 
+#include "tests/branch_coverage.h"
+
 #include "chain_ik_3d_gizmo_plugin.h"
 
 #include "editor/settings/editor_settings.h"
@@ -121,10 +123,17 @@ void ChainIK3DGizmoPlugin::get_joints_mesh(Skeleton3D *p_skeleton, ChainIK3D *p_
 	surface_tool_without_skin.instantiate();
 	surface_tool_without_skin->begin(Mesh::PRIMITIVE_LINES);
 
-	if (p_is_selected) {
+	if (p_is_selected)
+	{
+		hit(1,1);
+
 		surface_tool->set_material(selection_materials.selected_mat);
 		surface_tool_without_skin->set_material(selection_materials.selected_mat);
-	} else {
+	}
+	else
+	{
+		hit(1,2);
+
 		selection_materials.unselected_mat->set_albedo(bone_color);
 		surface_tool->set_material(selection_materials.unselected_mat);
 		surface_tool_without_skin->set_material(selection_materials.unselected_mat);
@@ -135,21 +144,32 @@ void ChainIK3DGizmoPlugin::get_joints_mesh(Skeleton3D *p_skeleton, ChainIK3D *p_
 	bones.resize(4);
 	weights.resize(4);
 	for (int i = 0; i < 4; i++) {
+		hit(1,3);
+
 		bones.write[i] = 0;
 		weights.write[i] = 0;
 	}
 	weights.write[0] = 1;
 
-	for (int i = 0; i < p_ik->get_setting_count(); i++) {
+	for (int i = 0; i < p_ik->get_setting_count(); i++)
+	{
+		hit(1,4);
+
 		int current_bone = -1;
 		int prev_bone = -1;
 		int joint_end = p_ik->get_joint_count(i) - 1;
 		float prev_length = INFINITY;
 		bool is_extended = p_ik->is_end_bone_extended(i) && p_ik->get_end_bone_length(i) > 0;
 		Transform3D anc_global_pose = p_ik->get_chain_root_global_rest(i);
-		for (int j = 0; j <= joint_end; j++) {
+		for (int j = 0; j <= joint_end; j++)
+		{
+			hit(1,5);
+
 			current_bone = p_ik->get_joint_bone(i, j);
-			if (j > 0) {
+			if (j > 0)
+			{
+				hit(1,6);
+
 				int prev_joint = j - 1;
 				Transform3D parent_global_pose = p_skeleton->get_bone_global_rest(prev_bone);
 				Vector3 bone_vector = p_ik->get_bone_vector(i, prev_joint);
@@ -157,13 +177,25 @@ void ChainIK3DGizmoPlugin::get_joints_mesh(Skeleton3D *p_skeleton, ChainIK3D *p_
 				Vector3 center = parent_global_pose.translated_local(bone_vector).origin;
 				draw_line(surface_tool, parent_global_pose.origin, center, bone_color);
 
-				if (it_ik) {
+				if (it_ik)
+				{
+					hit(1,7);
+
 					// Draw rotation axis vector if not ROTATION_AXIS_ALL.
-					if (j != joint_end || (j == joint_end && is_extended)) {
+					if (j != joint_end || (j == joint_end && is_extended))
+					{
+						hit(1,8);
+
 						SkeletonModifier3D::RotationAxis rotation_axis = it_ik->get_joint_rotation_axis(i, j);
-						if (rotation_axis != SkeletonModifier3D::ROTATION_AXIS_ALL) {
+						if (rotation_axis != SkeletonModifier3D::ROTATION_AXIS_ALL)
+						{
+							hit(1,9);
+
 							Vector3 axis_vector = it_ik->get_joint_rotation_axis_vector(i, j);
-							if (!axis_vector.is_zero_approx()) {
+							if (!axis_vector.is_zero_approx())
+							{
+								hit(1,10);
+
 								float rot_axis_length = bone_vector.length() * 0.2; // Use 20% of the bone length for the rotation axis vector.
 								Vector3 axis = parent_global_pose.basis.xform(axis_vector.normalized()) * rot_axis_length;
 								draw_line(surface_tool, center - axis, center + axis, bone_color);
@@ -173,15 +205,22 @@ void ChainIK3DGizmoPlugin::get_joints_mesh(Skeleton3D *p_skeleton, ChainIK3D *p_
 
 					// Draw parent limitation shape.
 					Ref<JointLimitation3D> lim = it_ik->get_joint_limitation(i, prev_joint);
-					if (lim.is_valid() && prev_bone >= 0) {
+					if (lim.is_valid() && prev_bone >= 0)
+					{
+						hit(1,11);
+
 						// Limitation space should bind parent bone rest.
 						int parent = p_skeleton->get_bone_parent(prev_bone);
 						Ref<SurfaceTool> limitation_surface_tool = parent >= 0 ? surface_tool : surface_tool_without_skin;
-						if (parent >= 0) {
+						if (parent >= 0)
+						{
+							hit(1,12);
+
 							bones.write[0] = parent;
 							limitation_surface_tool->set_bones(bones);
 							limitation_surface_tool->set_weights(weights);
 						}
+
 						Transform3D tr = anc_global_pose;
 						tr.basis *= it_ik->get_joint_limitation_space(i, prev_joint, bone_vector.normalized());
 						float sl = MIN(current_length, prev_length);
@@ -199,12 +238,16 @@ void ChainIK3DGizmoPlugin::get_joints_mesh(Skeleton3D *p_skeleton, ChainIK3D *p_
 				parent_global_pose *= tr;
 				anc_global_pose = parent_global_pose;
 			}
-			if (j == joint_end && is_extended) {
+			if (j == joint_end && is_extended)
+			{
+				hit(1,13);
+
 				Transform3D current_global_pose = p_skeleton->get_bone_global_rest(current_bone);
 				Vector3 bone_vector = p_ik->get_bone_vector(i, j);
 				if (bone_vector.is_zero_approx()) {
 					continue;
 				}
+
 				float current_length = bone_vector.length();
 				bones.write[0] = current_bone;
 				surface_tool->set_bones(bones);
@@ -212,18 +255,28 @@ void ChainIK3DGizmoPlugin::get_joints_mesh(Skeleton3D *p_skeleton, ChainIK3D *p_
 				Vector3 center = current_global_pose.translated_local(bone_vector).origin;
 				draw_line(surface_tool, current_global_pose.origin, center, bone_color);
 
-				if (it_ik) {
+				if (it_ik)
+				{
+					hit(1,14);
+
 					// Draw limitation shape.
 					Ref<JointLimitation3D> lim = it_ik->get_joint_limitation(i, j);
-					if (lim.is_valid() && current_bone >= 0) {
+
+					if (lim.is_valid() && current_bone >= 0)
+					{
+						hit(1,15);
+
 						// Limitation space should bind parent bone rest.
 						int parent = p_skeleton->get_bone_parent(current_bone);
 						Ref<SurfaceTool> limitation_surface_tool = parent >= 0 ? surface_tool : surface_tool_without_skin;
-						if (parent >= 0) {
+						if (parent >= 0)
+						{
+							hit(1,16);
 							bones.write[0] = parent;
 							limitation_surface_tool->set_bones(bones);
 							limitation_surface_tool->set_weights(weights);
 						}
+
 						Transform3D tr = anc_global_pose;
 						tr.basis *= it_ik->get_joint_limitation_space(i, j, bone_vector.normalized());
 						float sl = MIN(current_length, prev_length);
@@ -235,22 +288,41 @@ void ChainIK3DGizmoPlugin::get_joints_mesh(Skeleton3D *p_skeleton, ChainIK3D *p_
 						draw_line(limitation_surface_tool, tr.origin + z_axis * 2, tr.origin + z_axis * 3, limitation_z_axis_color); // Offset 20%.
 					}
 				}
-			} else {
+			}
+			else
+			{
+				hit(1,17);
+
 				bones.write[0] = current_bone;
 				surface_tool->set_bones(bones);
 				surface_tool->set_weights(weights);
-				if (j == 0) {
+				if (j == 0)
+				{
+					hit(1,18);
+
 					// Check if the next bone exists.
 					int count = p_ik->get_joint_count(i);
-					if (count < 2) {
+					if (count < 2)
+					{
+						hit(1,19);
+
 						continue;
 					}
-					if (it_ik) {
+					if (it_ik)
+					{
+						hit(1,20);
+
 						// Draw rotation axis vector if not ROTATION_AXIS_ALL.
 						SkeletonModifier3D::RotationAxis rotation_axis = it_ik->get_joint_rotation_axis(i, j);
-						if (rotation_axis != SkeletonModifier3D::ROTATION_AXIS_ALL) {
+						if (rotation_axis != SkeletonModifier3D::ROTATION_AXIS_ALL)
+						{
+							hit(1,21);
+
 							Vector3 axis_vector = it_ik->get_joint_rotation_axis_vector(i, j);
-							if (!axis_vector.is_zero_approx()) {
+							if (!axis_vector.is_zero_approx())
+							{
+								hit(1,22);
+
 								Vector3 bone_vector = p_ik->get_bone_vector(i, j);
 								float rot_axis_length = bone_vector.length() * 0.2; // Use 20% of the bone length for the rotation axis vector.
 								Vector3 axis = anc_global_pose.basis.xform(axis_vector.normalized()) * rot_axis_length;
