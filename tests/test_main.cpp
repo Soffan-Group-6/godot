@@ -232,23 +232,12 @@
 
 #include "servers/rendering/rendering_server_default.h"
 
-bool append_utf16_coverage[35] = {false};
+#include "branch_coverage.h" // IMPORT CODE COVERAGE
 
-// Prints which branches were taken to standard out
-// branch_flags - an array of flags, true is taken
-// flag_amount - the total number of flags
-// name - name of the function to print, e.g. Object::Build()
-void report_branch_coverage(bool branch_flags[], int flag_amount, const char name[]) {
-    printf("\n- %s Branch Coverage:\n", name);
-	int taken = 0;
-    for (int i = 0; i < flag_amount; i++) {
-		if (branch_flags[i]) taken++;
-        printf("Branch %2d: %s\n", i + 1, branch_flags[i] ? "taken" : "not taken");
-    }
-	printf("%2d/%2d (%.2f%%) Branches taken\n", taken, flag_amount, float(taken)/float(flag_amount)*100);
-}
+int test_main(int argc, char *argv[])
+{
+	init_coverage(); // Initialize coverage
 
-int test_main(int argc, char *argv[]) {
 	bool run_tests = true;
 
 	// Convert arguments to Godot's command-line.
@@ -317,9 +306,9 @@ int test_main(int argc, char *argv[]) {
 		delete[] doctest_args;
 	}
 
-	int run_num = test_context.run();
-	report_branch_coverage(append_utf16_coverage, 35, "String::append_utf16");
-	return run_num;
+	int result = test_context.run();
+	print_coverage();
+	return result;
 }
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
