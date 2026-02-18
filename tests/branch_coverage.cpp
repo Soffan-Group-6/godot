@@ -1,14 +1,17 @@
 #include "branch_coverage.h"
 
-const int NUM_FUNCTIONS = 2;
+const int NUM_FUNCTIONS = 3;
 const int MAX_BRANCHES_FUNC1 = 22;
 const int MAX_BRANCHES_FUNC2 = 35;
+const int MAX_BRANCHES_FUNC3 = 29;
 BranchCoverageInfo func1_branches[MAX_BRANCHES_FUNC1];
 BranchCoverageInfo func2_branches[MAX_BRANCHES_FUNC2];
+BranchCoverageInfo func3_branches[MAX_BRANCHES_FUNC3];
 
 FunctionCoverage functions[] = {
 	{"ChainIK3DGizmoPlugin::get_joints_mesh()", MAX_BRANCHES_FUNC1, func1_branches},
-	{"String::append_utf16()", MAX_BRANCHES_FUNC2, func2_branches}
+	{"String::append_utf16()", MAX_BRANCHES_FUNC2, func2_branches},
+	{"String::simplify_path()", MAX_BRANCHES_FUNC3, func3_branches}
 };
 
 void init_coverage() {

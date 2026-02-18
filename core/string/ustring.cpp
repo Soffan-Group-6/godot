@@ -4193,47 +4193,68 @@ String String::simplify_path() const {
 	int p = s.find("://");
 	bool found = false;
 	if (p > 0) {
+		hit(3,1);
 		bool only_chars = true;
 		for (int i = 0; i < p; i++) {
+			hit(3,2);
 			if (!is_ascii_alphanumeric_char(s[i])) {
+				hit(3,3);
 				only_chars = false;
 				break;
 			}
 		}
 		if (only_chars) {
+			hit(3,4);
 			found = true;
 			drive = s.substr(0, p + 3);
 			s = s.substr(p + 3);
 		}
+	} else {
+		hit(3,5);
 	}
 	if (!found) {
+		hit(3,6);
 		if (is_network_share_path()) {
+			hit(3,7);
 			// Network path, beginning with // or \\.
 			drive = s.substr(0, 2);
 			s = s.substr(2);
 		} else if (s.begins_with("/") || s.begins_with("\\")) {
+			hit(3,8);
 			// Absolute path.
 			drive = s.substr(0, 1);
 			s = s.substr(1);
 		} else {
+			hit(3,9);
 			// Windows-style drive path, like C:/ or C:\.
 			p = s.find(":/");
 			if (p == -1) {
+				hit(3,10);
 				p = s.find(":\\");
+			} else {
+				hit(3,11);
 			}
 			if (p != -1 && p < s.find_char('/')) {
+				hit(3,12);
 				drive = s.substr(0, p + 2);
 				s = s.substr(p + 2);
+			} else {
+				hit(3,13);
 			}
 		}
+	} else {
+		hit(3,14);
 	}
 
 	s = s.replace_char('\\', '/');
 	while (true) { // in case of using 2 or more slash
+		hit(3,15);
 		String compare = s.replace("//", "/");
 		if (s == compare) {
+			hit(3,16);
 			break;
 		} else {
+			hit(3,17);
 			s = compare;
 		}
 	}
@@ -4241,33 +4262,47 @@ String String::simplify_path() const {
 	bool absolute_path = is_absolute_path();
 
 	absolute_path = absolute_path && !begins_with("res://"); // FIXME: Some code (GLTF importer) rely on accessing files up from `res://`, this probably should be disabled in the future.
+	hit(3,18);
 
 	for (int i = 0; i < dirs.size(); i++) {
+		hit(3,19);
 		String d = dirs[i];
 		if (d == ".") {
+			hit(3,20);
 			dirs.remove_at(i);
 			i--;
 		} else if (d == "..") {
+			hit(3,21);
 			if (i != 0 && dirs[i - 1] != "..") {
+				hit(3,22);
 				dirs.remove_at(i);
 				dirs.remove_at(i - 1);
 				i -= 2;
 			} else if (absolute_path && i == 0) {
+				hit(3,23);
 				dirs.remove_at(i);
 				i--;
+			} else {
+				hit(3,24);
 			}
+		} else {
+			hit(3,25);
 		}
 	}
 
 	s = "";
 
 	for (int i = 0; i < dirs.size(); i++) {
+		hit(3,26);
 		if (i > 0) {
+			hit(3,27);
 			s += "/";
+		} else {
+			hit(3,28);
 		}
 		s += dirs[i];
 	}
-
+	hit(3,29);
 	return drive + s;
 }
 
