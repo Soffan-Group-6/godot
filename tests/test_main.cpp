@@ -236,9 +236,12 @@ bool append_utf16_coverage[35] = {false};
 
 void report_branch_coverage(bool branch_flags[], int flag_amount, const char name[]) {
     printf("\n- %s Branch Coverage:\n", name);
+	int taken = 0;
     for (int i = 0; i < flag_amount; i++) {
+		if (branch_flags[i]) taken++;
         printf("Branch %2d: %s\n", i + 1, branch_flags[i] ? "taken" : "not taken");
     }
+	printf("%2d/%2d (%.2f%%) Branches taken\n", taken, flag_amount, float(taken)/float(flag_amount)*100);
 }
 
 int test_main(int argc, char *argv[]) {
