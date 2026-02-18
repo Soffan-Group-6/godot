@@ -121,10 +121,15 @@ void ChainIK3DGizmoPlugin::get_joints_mesh(Skeleton3D *p_skeleton, ChainIK3D *p_
 	surface_tool_without_skin.instantiate();
 	surface_tool_without_skin->begin(Mesh::PRIMITIVE_LINES);
 
+	// Requirement: When the IK chain is selected in the editor, the gizmo should use the
+	//			    "selected" material; otherwise it should use the "unselected" material
+	//              with the bone color.
 	if (p_is_selected) {
 		surface_tool->set_material(selection_materials.selected_mat);
 		surface_tool_without_skin->set_material(selection_materials.selected_mat);
-	} else {
+	}
+	else
+	{
 		selection_materials.unselected_mat->set_albedo(bone_color);
 		surface_tool->set_material(selection_materials.unselected_mat);
 		surface_tool_without_skin->set_material(selection_materials.unselected_mat);
@@ -134,22 +139,38 @@ void ChainIK3DGizmoPlugin::get_joints_mesh(Skeleton3D *p_skeleton, ChainIK3D *p_
 	PackedFloat32Array weights;
 	bones.resize(4);
 	weights.resize(4);
-	for (int i = 0; i < 4; i++) {
+
+	// Requirement: Ensure that all bones start at zero with default weights, and that the
+	//			    first bone has full weight (1.0) proper rendering.
+	for (int i = 0; i < 4; i++)
+	{
 		bones.write[i] = 0;
 		weights.write[i] = 0;
 	}
 	weights.write[0] = 1;
 
-	for (int i = 0; i < p_ik->get_setting_count(); i++) {
+	// Requirement: For every IK chain in the Skeleton3D, traverse all joints and compute their
+	//				global positions, bone vectors, and render lines/meshes to visualize the IK
+	//              chain correctly in the editor. Handle rotation axes, joint limitations,
+	//			    and end-bone extension.
+	for (int i = 0; i < p_ik->get_setting_count(); i++)
+	{
 		int current_bone = -1;
 		int prev_bone = -1;
+
 		int joint_end = p_ik->get_joint_count(i) - 1;
 		float prev_length = INFINITY;
 		bool is_extended = p_ik->is_end_bone_extended(i) && p_ik->get_end_bone_length(i) > 0;
 		Transform3D anc_global_pose = p_ik->get_chain_root_global_rest(i);
-		for (int j = 0; j <= joint_end; j++) {
+
+		// Requirements: More than zero joints
+		for (int j = 0; j <= joint_end; j++)
+		{
 			current_bone = p_ik->get_joint_bone(i, j);
-			if (j > 0) {
+
+			// Requirement: The joint end can't be the first.
+			if (j > 0)
+			{
 				int prev_joint = j - 1;
 				Transform3D parent_global_pose = p_skeleton->get_bone_global_rest(prev_bone);
 				Vector3 bone_vector = p_ik->get_bone_vector(i, prev_joint);
@@ -157,13 +178,23 @@ void ChainIK3DGizmoPlugin::get_joints_mesh(Skeleton3D *p_skeleton, ChainIK3D *p_
 				Vector3 center = parent_global_pose.translated_local(bone_vector).origin;
 				draw_line(surface_tool, parent_global_pose.origin, center, bone_color);
 
-				if (it_ik) {
+				if (it_ik)
+				{
 					// Draw rotation axis vector if not ROTATION_AXIS_ALL.
-					if (j != joint_end || (j == joint_end && is_extended)) {
+					// Requirement: The joint can be an edge unless it is extended, menaing
+					//              not edge joints and extended edge joints allowed
+					if (j != joint_end || (j == joint_end && is_extended))
+					{
 						SkeletonModifier3D::RotationAxis rotation_axis = it_ik->get_joint_rotation_axis(i, j);
-						if (rotation_axis != SkeletonModifier3D::ROTATION_AXIS_ALL) {
+
+						// Requirement: Not ROTATION_AXIS_ALL
+						if (rotation_axis != SkeletonModifier3D::ROTATION_AXIS_ALL)
+						{
 							Vector3 axis_vector = it_ik->get_joint_rotation_axis_vector(i, j);
-							if (!axis_vector.is_zero_approx()) {
+
+							// Requirement: Rotation axis vector for this joint is defined.
+							if (!axis_vector.is_zero_approx())
+							{
 								float rot_axis_length = bone_vector.length() * 0.2; // Use 20% of the bone length for the rotation axis vector.
 								Vector3 axis = parent_global_pose.basis.xform(axis_vector.normalized()) * rot_axis_length;
 								draw_line(surface_tool, center - axis, center + axis, bone_color);
@@ -173,18 +204,29 @@ void ChainIK3DGizmoPlugin::get_joints_mesh(Skeleton3D *p_skeleton, ChainIK3D *p_
 
 					// Draw parent limitation shape.
 					Ref<JointLimitation3D> lim = it_ik->get_joint_limitation(i, prev_joint);
-					if (lim.is_valid() && prev_bone >= 0) {
+
+					// Requirement: prev_bone has to be larger than zero and limitations for previous
+					//              joint has to be valid
+					if (lim.is_valid() && prev_bone >= 0)
+					{
 						// Limitation space should bind parent bone rest.
 						int parent = p_skeleton->get_bone_parent(prev_bone);
+
 						Ref<SurfaceTool> limitation_surface_tool = parent >= 0 ? surface_tool : surface_tool_without_skin;
-						if (parent >= 0) {
+
+						// Requirement: the parent bone has to be larger than zero
+						if (parent >= 0)
+						{
 							bones.write[0] = parent;
 							limitation_surface_tool->set_bones(bones);
 							limitation_surface_tool->set_weights(weights);
 						}
+
 						Transform3D tr = anc_global_pose;
 						tr.basis *= it_ik->get_joint_limitation_space(i, prev_joint, bone_vector.normalized());
+
 						float sl = MIN(current_length, prev_length);
+
 						lim->draw_shape(limitation_surface_tool, tr, sl, bone_color);
 						sl *= 0.1;
 						Vector3 x_axis = tr.basis.get_column(Vector3::AXIS_X).normalized() * sl;
@@ -193,18 +235,25 @@ void ChainIK3DGizmoPlugin::get_joints_mesh(Skeleton3D *p_skeleton, ChainIK3D *p_
 						draw_line(limitation_surface_tool, tr.origin + z_axis * 2, tr.origin + z_axis * 3, limitation_z_axis_color); // Offset 20%.
 					}
 				}
+
 				prev_length = current_length;
 				Transform3D tr = p_skeleton->get_bone_rest(current_bone);
 				tr.origin = bone_vector;
 				parent_global_pose *= tr;
 				anc_global_pose = parent_global_pose;
 			}
-			if (j == joint_end && is_extended) {
+			// Requirement: The joint has to be an ending joint and be extended
+			if (j == joint_end && is_extended)
+			{
 				Transform3D current_global_pose = p_skeleton->get_bone_global_rest(current_bone);
 				Vector3 bone_vector = p_ik->get_bone_vector(i, j);
-				if (bone_vector.is_zero_approx()) {
+
+				// Requirement: The bone vector is near zero.
+				if (bone_vector.is_zero_approx())
+				{
 					continue;
 				}
+
 				float current_length = bone_vector.length();
 				bones.write[0] = current_bone;
 				surface_tool->set_bones(bones);
@@ -212,18 +261,27 @@ void ChainIK3DGizmoPlugin::get_joints_mesh(Skeleton3D *p_skeleton, ChainIK3D *p_
 				Vector3 center = current_global_pose.translated_local(bone_vector).origin;
 				draw_line(surface_tool, current_global_pose.origin, center, bone_color);
 
-				if (it_ik) {
+				// Requirement: p_ik has to be a IterateIK3D object
+				if (it_ik)
+				{
 					// Draw limitation shape.
 					Ref<JointLimitation3D> lim = it_ik->get_joint_limitation(i, j);
-					if (lim.is_valid() && current_bone >= 0) {
+
+					// Requirement: current bone has to be larger than zro and limitations has to be valid
+					if (lim.is_valid() && current_bone >= 0)
+					{
 						// Limitation space should bind parent bone rest.
 						int parent = p_skeleton->get_bone_parent(current_bone);
 						Ref<SurfaceTool> limitation_surface_tool = parent >= 0 ? surface_tool : surface_tool_without_skin;
-						if (parent >= 0) {
+
+						// Requirement: the parent bone has to be larger than zero
+						if (parent >= 0)
+						{
 							bones.write[0] = parent;
 							limitation_surface_tool->set_bones(bones);
 							limitation_surface_tool->set_weights(weights);
 						}
+
 						Transform3D tr = anc_global_pose;
 						tr.basis *= it_ik->get_joint_limitation_space(i, j, bone_vector.normalized());
 						float sl = MIN(current_length, prev_length);
@@ -235,22 +293,39 @@ void ChainIK3DGizmoPlugin::get_joints_mesh(Skeleton3D *p_skeleton, ChainIK3D *p_
 						draw_line(limitation_surface_tool, tr.origin + z_axis * 2, tr.origin + z_axis * 3, limitation_z_axis_color); // Offset 20%.
 					}
 				}
-			} else {
+			}
+			else // Requirement: The joint has to NOT be an ending joint and be extended
+			{
 				bones.write[0] = current_bone;
 				surface_tool->set_bones(bones);
 				surface_tool->set_weights(weights);
-				if (j == 0) {
+
+				// Requirement: Has to be the first joint
+				if (j == 0)
+				{
 					// Check if the next bone exists.
 					int count = p_ik->get_joint_count(i);
-					if (count < 2) {
+
+					// Requirement: the amoint of chained joints has to be lesser than 2
+					if (count < 2)
+					{
 						continue;
 					}
-					if (it_ik) {
+
+					// Requirement: p_ik has to be a IterateIK3D object
+					if (it_ik)
+					{
 						// Draw rotation axis vector if not ROTATION_AXIS_ALL.
 						SkeletonModifier3D::RotationAxis rotation_axis = it_ik->get_joint_rotation_axis(i, j);
-						if (rotation_axis != SkeletonModifier3D::ROTATION_AXIS_ALL) {
+
+						// Requirement: rotation_axis can't be all ROTATION_AXIS_ALL
+						if (rotation_axis != SkeletonModifier3D::ROTATION_AXIS_ALL)
+						{
 							Vector3 axis_vector = it_ik->get_joint_rotation_axis_vector(i, j);
-							if (!axis_vector.is_zero_approx()) {
+
+							// Requirement: the axis_vector can't be approximatly zero
+							if (!axis_vector.is_zero_approx())
+							{
 								Vector3 bone_vector = p_ik->get_bone_vector(i, j);
 								float rot_axis_length = bone_vector.length() * 0.2; // Use 20% of the bone length for the rotation axis vector.
 								Vector3 axis = anc_global_pose.basis.xform(axis_vector.normalized()) * rot_axis_length;
