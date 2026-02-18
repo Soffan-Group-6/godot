@@ -234,6 +234,10 @@
 
 bool append_utf16_coverage[35] = {false};
 
+// Prints which branches were taken to standard out
+// branch_flags - an array of flags, true is taken
+// flag_amount - the total number of flags
+// name - name of the function to print, e.g. Object::Build()
 void report_branch_coverage(bool branch_flags[], int flag_amount, const char name[]) {
     printf("\n- %s Branch Coverage:\n", name);
 	int taken = 0;
