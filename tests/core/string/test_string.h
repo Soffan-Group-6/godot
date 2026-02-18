@@ -1860,8 +1860,6 @@ TEST_CASE("[String] hash") {
 	CHECK(a.hash64() != c.hash64());
 }
 
-extern bool simplify_path_coverage[];
-
 // Additional unit tests to improve branch coverage for String::simplify_path()
 // The test cases triggers branches not covered by existing tests.
 TEST_CASE("[String] simplify_path - improve branch coverage") {
