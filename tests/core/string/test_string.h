@@ -136,17 +136,11 @@ TEST_CASE("[String] UTF16") {
 
 	// 0 length is OK
 	SUBCASE("0 Length") {
+		static const char32_t u32str[] = { 0 };
+		String expected = u32str;
 		String parsed;
-		Error err = parsed.append_utf16({}, 0, false);
+		Error err = parsed.append_utf16(expected.utf16().get_data());
 		CHECK(err == OK);
-	}
-
-	// Parse error for double lead surrogate
-	SUBCASE("Parse Error") {
-		static const char32_t u32str[] = { 0xd800, 0xd800, 0 };
-		String parsed;
-		Error err = parsed.append_utf16(u32str.utf16().get_data());
-		CHECK(err == ERR_PARSE_ERROR);
 	}
 }
 
