@@ -232,6 +232,18 @@
 
 #include "servers/rendering/rendering_server_default.h"
 
+bool file_popup_selected_coverage[30] = {false};
+
+void report_branch_coverage(bool branch_flags[], int flag_amount, const char name[]) {
+    printf("\n- %s Branch Coverage:\n", name);
+	int taken = 0;
+    for (int i = 0; i < flag_amount; i++) {
+		if (branch_flags[i]) taken++;
+        printf("Branch %2d: %s\n", i + 1, branch_flags[i] ? "taken" : "not taken");
+    }
+	printf("%2d/%2d (%.2f%%) Branches taken\n", taken, flag_amount, float(taken)/float(flag_amount)*100);
+}
+
 int test_main(int argc, char *argv[]) {
 	bool run_tests = true;
 
@@ -301,7 +313,9 @@ int test_main(int argc, char *argv[]) {
 		delete[] doctest_args;
 	}
 
-	return test_context.run();
+	int run_num = test_context.run();
+	report_branch_coverage(file_popup_selected_coverage, 30, "AnimationLibraryEditor::_file_popup_selected");
+	return run_num;
 }
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
