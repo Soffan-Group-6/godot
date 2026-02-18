@@ -199,4 +199,94 @@ TEST_CASE("[Geometry3D] Triangle and Sphere Intersect") {
 	CHECK(Geometry3D::triangle_sphere_intersection_test(triangle_a, triangle_b, triangle_c, Vector3(0, 1, 0), Vector3(0, 0, 0), 5, triangle_contact, sphere_contact) == true);
 	CHECK(Geometry3D::triangle_sphere_intersection_test(triangle_a, triangle_b, triangle_c, Vector3(0, 1, 0), Vector3(20, 0, 0), 5, triangle_contact, sphere_contact) == false);
 }
+
+// ===============================
+// Requirements for get_closest_points_between_segments()
+// ===============================
+//
+// R1: For non-degenerate, non-parallel segments, return points ps on [p0,p1]
+//     and qt on [q0,q1] that minimize distance between segments.
+// R2: Parameter s is clamped to [0,1]; if the closest point on the infinite
+//     line lies before p0 (s < 0), ps = p0; if after p1 (s > 1), ps = p1.
+// R3: Parameter t is clamped to [0,1] with analogous behaviour for q0, q1.
+// R4: If segment P is a point (p0 == p1), ps is always that point, and qt is
+//     the closest point on Q.
+// R5: If segment Q is a point (q0 == q1), qt is always that point, and ps is
+//     the closest point on P.
+// R6: If both segments are points, ps == p0 and qt == q0.
+// R7: If segments are parallel (or nearly parallel), a special branch handles
+//     the computation without numerical issues.
+// R8: If segments intersect, ps and qt coincide (distance zero).
+
+// Covers R2 (s < 0 clamping) and basic non-degenerate, non-parallel case
+TEST_CASE("[Geometry3D] closest_points_clamp_s_before_segment") {
+    // First segment along +X from (0,0,0) to (1,0,0).
+    Vector3 p0(0, 0, 0);
+    Vector3 p1(1, 0, 0);
+
+    // Second segment is vertical at x = -1, so the infinite closest point
+    // on the first line lies at x = -1 (s < 0), forcing clamp to s = 0.
+    Vector3 q0(-1, 1, 0);
+    Vector3 q1(-1, -1, 0);
+
+    Vector3 ps;
+    Vector3 qt;
+    Geometry3D::get_closest_points_between_segments(p0, p1, q0, q1, ps, qt);
+
+    // Should clamp to p0.
+    CHECK(ps == p0);
+    // Closest point on second segment should be somewhere between q0 and q1 (x = -1)
+    CHECK(Math::is_equal_approx(qt.x, -1.0f));
+}
+
+// Covers R2 with s > 1 (clamped to 1 → ps = p1)
+TEST_CASE("[Geometry3D] closest_points_clamp_s_after_segment") {
+    Vector3 p0(0, 0, 0);
+    Vector3 p1(1, 0, 0);
+
+    // Second segment vertical at x = 2 → closest point on infinite line at x = 2 (s > 1),
+    // so s is clamped to 1 and ps == p1.
+    Vector3 q0(2, 1, 0);
+    Vector3 q1(2, -1, 0);
+
+    Vector3 ps;
+    Vector3 qt;
+    Geometry3D::get_closest_points_between_segments(p0, p1, q0, q1, ps, qt);
+
+    CHECK(ps == p1);
+    CHECK(Math::is_equal_approx(qt.x, 2.0f));
+}
+
+// Covers R3 with t < 0 (clamped to 0 → qt = q0)
+TEST_CASE("[Geometry3D] closest_points_clamp_t_before_segment") {
+    // First segment vertical, second horizontal, shifted so that
+    // the closest point on segment 2 lies before q0.
+    Vector3 p0(0, -1, 0);
+    Vector3 p1(0, 1, 0);
+
+    Vector3 q0(1, 0, 0);
+    Vector3 q1(3, 0, 0); // infinite closest point at x < 1
+
+    Vector3 ps;
+    Vector3 qt;
+    Geometry3D::get_closest_points_between_segments(p0, p1, q0, q1, ps, qt);
+
+    CHECK(qt == q0);
+}
+
+// Covers R3 with t > 1 (clamped to 1 → qt = q1)
+TEST_CASE("[Geometry3D] closest_points_clamp_t_after_segment") {
+    Vector3 p0(0, -1, 0);
+    Vector3 p1(0, 1, 0);
+
+    Vector3 q0(-3, 0, 0);
+    Vector3 q1(-1, 0, 0); // infinite closest point at x > -1
+
+    Vector3 ps;
+    Vector3 qt;
+    Geometry3D::get_closest_points_between_segments(p0, p1, q0, q1, ps, qt);
+
+    CHECK(qt == q1);
+}
+
 } // namespace TestGeometry3D
