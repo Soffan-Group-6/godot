@@ -2000,6 +2000,7 @@ CharString String::utf8(Vector<uint8_t> *r_ch_length_map) const {
 }
 
 Error String::append_utf16(const char16_t *p_utf16, int p_len, bool p_default_little_endian) {
+	// Requirement: ERR_INVALID_DATA is returned for nullptrs
 	if (!p_utf16) {
 		return ERR_INVALID_DATA;
 	}
@@ -2015,16 +2016,21 @@ Error String::append_utf16(const char16_t *p_utf16, int p_len, bool p_default_li
 	bool byteswap = !p_default_little_endian;
 #endif
 	/* HANDLE BOM (Byte Order Mark) */
+	// Requirement: for strings that are not empty, byte order marker is respected
 	if (p_len < 0 || p_len >= 1) {
 		bool has_bom = false;
+		// Requirement: forward byte order marker is respected
 		if (uint16_t(p_utf16[0]) == 0xfeff) { // correct BOM, read as is
 			has_bom = true;
 			byteswap = false;
+		// Requirement: backwards byte order marker is respected
 		} else if (uint16_t(p_utf16[0]) == 0xfffe) { // backwards BOM, swap bytes
 			has_bom = true;
 			byteswap = true;
 		}
+		// Requirement: byte order marker does not count toward string length
 		if (has_bom) {
+			// Requirement: string length cannot be negative
 			if (p_len >= 0) {
 				p_len -= 1;
 			}
@@ -2038,23 +2044,30 @@ Error String::append_utf16(const char16_t *p_utf16, int p_len, bool p_default_li
 		const char16_t *ptrtmp_limit = p_len >= 0 ? &p_utf16[p_len] : nullptr;
 		uint32_t c_prev = 0;
 		bool skip = false;
+		// Requirement: ensure surrogate character formatting is valid
 		while (ptrtmp != ptrtmp_limit && *ptrtmp) {
 			uint32_t c = (byteswap) ? BSWAP16(*ptrtmp) : *ptrtmp;
 
+			// Requirement: there can not be two lead surrogates in a row
 			if ((c & 0xfffffc00) == 0xd800) { // lead surrogate
+				// Requirement: double lead surrogate results in parse error
 				if (skip) {
 					print_unicode_error(vformat("Unpaired lead surrogate (%x [trail?] %x)", c_prev, c));
 					decode_error = true;
 				}
 				skip = true;
+			// Requirement: trail surrogate must be preceded by a lead surrogate
 			} else if ((c & 0xfffffc00) == 0xdc00) { // trail surrogate
+				// Requirement: paired trail surrogate does not increase string size
 				if (skip) {
 					str_size--;
+				// Requirement: unpaired trail surrogate results in parse error
 				} else {
 					print_unicode_error(vformat("Unpaired trail surrogate (%x [lead?] %x)", c_prev, c));
 					decode_error = true;
 				}
 				skip = false;
+			// Requirement: surrogates need to be adjacent to pair
 			} else {
 				skip = false;
 			}
@@ -2065,12 +2078,14 @@ Error String::append_utf16(const char16_t *p_utf16, int p_len, bool p_default_li
 			ptrtmp++;
 		}
 
+		// Requirement: string cannot end with a lead surrogate
 		if (skip) {
 			print_unicode_error(vformat("Unpaired lead surrogate (%x [eol])", c_prev));
 			decode_error = true;
 		}
 	}
 
+	// Requirement: OK returned for 0 size strings
 	if (str_size == 0) {
 		clear();
 		return OK; // empty string
@@ -2083,21 +2098,28 @@ Error String::append_utf16(const char16_t *p_utf16, int p_len, bool p_default_li
 
 	bool skip = false;
 	uint32_t c_prev = 0;
+	// Requirement: utf16 data is appended to string
 	while (cstr_size) {
 		uint32_t c = (byteswap) ? BSWAP16(*p_utf16) : *p_utf16;
 
+		// Requirement: only unpaired lead surrogates are appended to string
 		if ((c & 0xfffffc00) == 0xd800) { // lead surrogate
+			// Requirement: unpaired lead surrogates are appended
 			if (skip) {
 				*(dst++) = c_prev; // unpaired, store as is
 			}
 			skip = true;
+		// Requirement: only unpaired trail surrogates are appended to string
 		} else if ((c & 0xfffffc00) == 0xdc00) { // trail surrogate
+			// Requirement: paired surrogates are decoded and appended
 			if (skip) {
 				*(dst++) = (c_prev << 10UL) + c - ((0xd800 << 10UL) + 0xdc00 - 0x10000); // decode pair
+			// Requirement: unpaired trail surrogates are appended
 			} else {
 				*(dst++) = c; // unpaired, store as is
 			}
 			skip = false;
+		// Requirement: standard characters are appended to string
 		} else {
 			*(dst++) = c;
 			skip = false;
@@ -2108,12 +2130,15 @@ Error String::append_utf16(const char16_t *p_utf16, int p_len, bool p_default_li
 		c_prev = c;
 	}
 
+	// Requirement: if string ends with unpaired lead surrogate it is appended
 	if (skip) {
 		*(dst++) = c_prev;
 	}
 
+	// Requirement: parse_error is returned for strings with decode problems
 	if (decode_error) {
 		return ERR_PARSE_ERROR;
+	// Requirement: OK is returned if utf16 could be appended correctly
 	} else {
 		return OK;
 	}

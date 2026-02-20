@@ -127,7 +127,7 @@ TEST_CASE("[String] UTF16") {
 		CHECK(String::utf16(cs) == parsed);
 	}
 
-	// Check that error is returned for nullptr data
+	// Check that invalid data error is returned for nullptr data
 	SUBCASE("Invalid data") {
 		String parsed;
 		Error err = parsed.append_utf16(nullptr, 0, false);
@@ -141,6 +141,14 @@ TEST_CASE("[String] UTF16") {
 		String parsed;
 		Error err = parsed.append_utf16(expected.utf16().get_data());
 		CHECK(err == OK);
+	}
+
+	// Parse error for badly formatted surrogates
+	SUBCASE("Parse Error") {
+		static const char16_t u16str[] = { 0x0045, 0x0020, 0x0045, 0x0020, 0x0045, 0x0020, 0xdc00, 0xdc00, 0xdc00, 0xd800, 0xd800, 0 };
+		String parsed;
+		Error err = parsed.append_utf16(u16str);
+		CHECK(err == ERR_PARSE_ERROR);
 	}
 }
 
