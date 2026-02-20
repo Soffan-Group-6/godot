@@ -107,22 +107,48 @@ TEST_CASE("[String] UTF8") {
 }
 
 TEST_CASE("[String] UTF16") {
-	/* how can i embed UTF in here? */
-	static const char32_t u32str[] = { 0x0045, 0x0020, 0x304A, 0x360F, 0x3088, 0x3046, 0x1F3A4, 0 };
-	static const char16_t u16str[] = { 0x0045, 0x0020, 0x304A, 0x360F, 0x3088, 0x3046, 0xD83C, 0xDFA4, 0 };
-	String expected = u32str;
-	String parsed;
-	Error err = parsed.append_utf16(expected.utf16().get_data());
-	CHECK(err == OK);
-	CHECK(parsed == u32str);
+	// Check parser correctly converts utf16 strings
+	SUBCASE("Correct conversion") {
+		/* how can i embed UTF in here? */
+		static const char32_t u32str[] = { 0x0045, 0x0020, 0x304A, 0x360F, 0x3088, 0x3046, 0x1F3A4, 0 };
+		static const char16_t u16str[] = { 0x0045, 0x0020, 0x304A, 0x360F, 0x3088, 0x3046, 0xD83C, 0xDFA4, 0 };
+		String expected = u32str;
+		String parsed;
+		Error err = parsed.append_utf16(expected.utf16().get_data());
+		CHECK(err == OK);
+		CHECK(parsed == u32str);
 
-	parsed.clear();
-	err = parsed.append_utf16(u16str);
-	CHECK(err == OK);
-	CHECK(parsed == u32str);
+		parsed.clear();
+		err = parsed.append_utf16(u16str);
+		CHECK(err == OK);
+		CHECK(parsed == u32str);
 
-	Char16String cs = u16str;
-	CHECK(String::utf16(cs) == parsed);
+		Char16String cs = u16str;
+		CHECK(String::utf16(cs) == parsed);
+	}
+
+	// Check that invalid data error is returned for nullptr data
+	SUBCASE("Invalid data") {
+		String parsed;
+		Error err = parsed.append_utf16(nullptr, 0, false);
+		CHECK(err == ERR_INVALID_DATA);
+	}
+
+	// 0 length is OK
+	SUBCASE("0 Length") {
+		static const char16_t u16str[] = {};
+		String parsed;
+		Error err = parsed.append_utf16(u16str, 0, false);
+		CHECK(err == OK);
+	}
+
+	// Parse error for badly formatted surrogates
+	SUBCASE("Parse Error") {
+		static const char16_t u16str[] = { 0x0045, 0x0020, 0x0045, 0x0020, 0x0045, 0x0020, 0xdc00, 0xdc00, 0xdc00, 0xd800, 0xd800, 0 };
+		String parsed;
+		Error err = parsed.append_utf16(u16str);
+		CHECK(err == ERR_PARSE_ERROR);
+	}
 }
 
 TEST_CASE("[String] UTF8 with BOM") {
