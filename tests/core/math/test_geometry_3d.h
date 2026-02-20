@@ -199,10 +199,4 @@ TEST_CASE("[Geometry3D] Triangle and Sphere Intersect") {
 	CHECK(Geometry3D::triangle_sphere_intersection_test(triangle_a, triangle_b, triangle_c, Vector3(0, 1, 0), Vector3(0, 0, 0), 5, triangle_contact, sphere_contact) == true);
 	CHECK(Geometry3D::triangle_sphere_intersection_test(triangle_a, triangle_b, triangle_c, Vector3(0, 1, 0), Vector3(20, 0, 0), 5, triangle_contact, sphere_contact) == false);
 }
-
-TEST_CASE("[Geometry3D] dump_manual_branch_coverage") {
-    // This should run after other tests that call get_closest_points_between_segments.
-    Geometry3D::_cpbs_dump_coverage_to_file();
-}
-
 } // namespace TestGeometry3D

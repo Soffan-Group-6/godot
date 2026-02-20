@@ -29,38 +29,8 @@
 /**************************************************************************/
 
 #include "geometry_3d.h"
-
+#include "tests/branch_coverage.h"
 #include "core/templates/hash_map.h"
-#include <stdio.h>
-
-static bool g_cpbs_branches[19] = {};
-
-void Geometry3D::_cpbs_dump_coverage_to_file() {
-    const char *path = "cpbs_coverage.txt";
-    FILE *f = fopen(path, "w");
-    if (!f) {
-        // If you want, you can just return here.
-        return;
-    }
-
-    for (int i = 0; i < 19; i++) {
-        fprintf(f, "CPBS_BRANCH_%d=%s\n",
-                i + 1,
-                g_cpbs_branches[i] ? "hit" : "missed");
-    }
-
-    fclose(f);
-}
-
-// Small helper for tests: returns distance as a convenience.
-real_t Geometry3D::get_closest_distance_between_segments_wrapped(
-    const Vector3 &p_p0, const Vector3 &p_p1,
-    const Vector3 &p_q0, const Vector3 &p_q1,
-    Vector3 &r_ps, Vector3 &r_qt) {
-
-    get_closest_points_between_segments(p_p0, p_p1, p_q0, p_q1, r_ps, r_qt);
-    return (r_qt - r_ps).length();
-}
 
 
 void Geometry3D::get_closest_points_between_segments(const Vector3 &p_p0, const Vector3 &p_p1, const Vector3 &p_q0, const Vector3 &p_q1, Vector3 &r_ps, Vector3 &r_qt) {
@@ -84,7 +54,7 @@ void Geometry3D::get_closest_points_between_segments(const Vector3 &p_p0, const 
     // B1.1: det > CMP_EPSILON (non-parallel)
     // B1.2: det <= CMP_EPSILON (parallel or nearly parallel)
     if (det > CMP_EPSILON) {
-        g_cpbs_branches[0] = true; // B1.1
+        hit(4,1); // B1.1
 
         // Non-parallel segments
         real_t bte = b * e;
@@ -93,7 +63,7 @@ void Geometry3D::get_closest_points_between_segments(const Vector3 &p_p0, const 
         // B2.1: bte <= ctd  (s <= 0 family)
         // B2.2: bte > ctd   (s > 0 family)
         if (bte <= ctd) {
-            g_cpbs_branches[1] = true; // B2.1
+            hit(4,2); // B2.1
 
             // s <= 0.0f
 
@@ -101,24 +71,24 @@ void Geometry3D::get_closest_points_between_segments(const Vector3 &p_p0, const 
             // B3.2: 0.0f < e < c
             // B3.3: e >= c
             if (e <= 0.0f) {
-                g_cpbs_branches[2] = true; // B3.1
+                hit(4,3); // B3.1
                 // t <= 0.0f
                 s = (-d >= a ? 1 : (-d > 0.0f ? -d / a : 0.0f));
                 t = 0.0f;
             } else if (e < c) {
-                g_cpbs_branches[3] = true; // B3.2
+                hit(4,4); // B3.2
                 // 0.0f < t < 1
                 s = 0.0f;
                 t = e / c;
             } else {
-                g_cpbs_branches[4] = true; // B3.3
+                hit(4,5); // B3.3
                 // t >= 1
                 s = (b - d >= a ? 1 : (b - d > 0.0f ? (b - d) / a : 0.0f));
                 t = 1;
             }
 
         } else {
-            g_cpbs_branches[5] = true; // B2.2
+            hit(4,6); // B2.2
 
             // s > 0.0f
             s = bte - ctd;
@@ -126,30 +96,30 @@ void Geometry3D::get_closest_points_between_segments(const Vector3 &p_p0, const 
             // B4.1: s >= det   (s >= 1 family)
             // B4.2: s < det    (0 < s < 1 family)
             if (s >= det) {
-                g_cpbs_branches[6] = true; // B4.1
+                hit(4,7); // B4.1
 
                 // s >= 1
                 // B5.1: b + e <= 0.0f
                 // B5.2: 0.0f < b + e < c
                 // B5.3: b + e >= c
                 if (b + e <= 0.0f) {
-                    g_cpbs_branches[7] = true; // B5.1
+                    hit(4,8); // B5.1
                     // t <= 0.0f
                     s = (-d <= 0.0f ? 0.0f : (-d < a ? -d / a : 1));
                     t = 0.0f;
                 } else if (b + e < c) {
-                    g_cpbs_branches[8] = true; // B5.2
+                    hit(4,9); // B5.2
                     // 0.0f < t < 1
                     s = 1;
                     t = (b + e) / c;
                 } else {
-                    g_cpbs_branches[9] = true; // B5.3
+                    hit(4,10); // B5.3
                     // t >= 1
                     s = (b - d <= 0.0f ? 0.0f : (b - d < a ? (b - d) / a : 1));
                     t = 1;
                 }
             } else {
-                g_cpbs_branches[10] = true; // B4.2
+                hit(4,11); // B4.2
 
                 // 0.0f < s < 1
                 real_t ate = a * e;
@@ -158,24 +128,24 @@ void Geometry3D::get_closest_points_between_segments(const Vector3 &p_p0, const 
                 // B6.1: ate <= btd (t <= 0)
                 // B6.2: ate > btd  (t > 0)
                 if (ate <= btd) {
-                    g_cpbs_branches[11] = true; // B6.1
+                    hit(4,12); // B6.1
                     // t <= 0.0f
                     s = (-d <= 0.0f ? 0.0f : (-d >= a ? 1 : -d / a));
                     t = 0.0f;
                 } else {
-                    g_cpbs_branches[12] = true; // B6.2
+                    hit(4,13); // B6.2
                     // t > 0.0f
                     t = ate - btd;
 
                     // B7.1: t >= det (t >= 1)
                     // B7.2: t < det  (0 < t < 1)
                     if (t >= det) {
-                        g_cpbs_branches[13] = true; // B7.1
+                        hit(4,14); // B7.1
                         // t >= 1
                         s = (b - d <= 0.0f ? 0.0f : (b - d >= a ? 1 : (b - d) / a));
                         t = 1;
                     } else {
-                        g_cpbs_branches[14] = true; // B7.2
+                        hit(4,15); // B7.2
                         // 0.0f < t < 1
                         s /= det;
                         t /= det;
@@ -185,7 +155,7 @@ void Geometry3D::get_closest_points_between_segments(const Vector3 &p_p0, const 
         }
 
     } else {
-        g_cpbs_branches[15] = true; // B1.2
+        hit(4,16); // B1.2
 
         // Parallel segments
 
@@ -193,15 +163,15 @@ void Geometry3D::get_closest_points_between_segments(const Vector3 &p_p0, const 
         // B8.2: 0.0f < e < c
         // B8.3: e >= c
         if (e <= 0.0f) {
-             g_cpbs_branches[16] = true; // B8.1
+             hit(4,17); // B8.1
             s = (-d <= 0.0f ? 0.0f : (-d >= a ? 1 : -d / a));
             t = 0.0f;
         } else if (e >= c) {
-             g_cpbs_branches[17] = true; // B8.3
+             hit(4,18); // B8.3
             s = (b - d <= 0.0f ? 0.0f : (b - d >= a ? 1 : (b - d) / a));
             t = 1;
         } else {
-             g_cpbs_branches[18] = true; // B8.2
+             hit(4,19); // B8.2
             s = 0.0f;
             t = e / c;
         }
