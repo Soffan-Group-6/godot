@@ -136,10 +136,9 @@ TEST_CASE("[String] UTF16") {
 
 	// 0 length is OK
 	SUBCASE("0 Length") {
-		static const char32_t u32str[] = { 0 };
-		String expected = u32str;
+		static const char16_t u16str[] = {};
 		String parsed;
-		Error err = parsed.append_utf16(expected.utf16().get_data());
+		Error err = parsed.append_utf16(u16str, 0, false);
 		CHECK(err == OK);
 	}
 
