@@ -33,6 +33,23 @@
 #include "core/templates/hash_map.h"
 
 void Geometry3D::get_closest_points_between_segments(const Vector3 &p_p0, const Vector3 &p_p1, const Vector3 &p_q0, const Vector3 &p_q1, Vector3 &r_ps, Vector3 &r_qt) {
+	// Requirements for get_closest_points_between_segments():
+	// R1: For non-degenerate, non-parallel segments, return points r_ps on [p_p0,p_p1]
+	//     and r_qt on [p_q0,p_q1] that minimize the distance between the two segments.
+	// R2: Parameter s is clamped to [0,1]; if the closest point on the infinite P-line
+	//     lies before p_p0 (s < 0) then r_ps == p_p0, and if after p_p1 (s > 1) then r_ps == p_p1.
+	// R3: Parameter t is clamped to [0,1] with analogous behaviour for the Q-segment
+	//     (r_qt == p_q0 when t < 0 and r_qt == p_q1 when t > 1).
+	// R4: If segment P is degenerate (p_p0 == p_p1), r_ps is always that point and r_qt is
+	//     the closest point on segment Q.
+	// R5: If segment Q is degenerate (p_q0 == p_q1), r_qt is always that point and r_ps is
+	//     the closest point on segment P.
+	// R6: If both segments are degenerate points, r_ps == p_p0 and r_qt == p_q0 and the
+	//     distance equals |p_p0 - p_q0|.
+	// R7: If segments are (nearly) parallel (det <= CMP_EPSILON), the dedicated parallel
+	//     branch is used to compute r_ps and r_qt in a numerically stable way.
+	// R8: If the segments intersect, r_ps and r_qt coincide (distance zero, up to tolerance).
+
 	// Based on David Eberly's Computation of Distance Between Line Segments algorithm.
 
 	Vector3 p = p_p1 - p_p0;
