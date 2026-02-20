@@ -3,22 +3,6 @@
 #include "mocks/mock_chain_ik_3d_gizmo_plugin.h"
 #include "mocks/mock_chain_ik_3d_gizmo_plugin.cpp"
 
-/*
-#include "scene/resources/mesh.h"
-#include "scene/3d/skeleton_3d.h"
-#include "scene/3d/skeleton_modifier_3d.h"
-#include "core/templates/vector.h"
-#include "core/object/ref_counted.h"
-
-#include "core/math/color.h"
-#include "core/math/quaternion.h"
-#include "core/math/vector3.h"
-
-#include "core/typedefs.h"
-#include "core/math/vector3.h"
-#include "core/math/transform_3d.h"
-*/
-
 #include "tests/test_macros.h"
 
 namespace TestChainIK3DGizmoPlugin {

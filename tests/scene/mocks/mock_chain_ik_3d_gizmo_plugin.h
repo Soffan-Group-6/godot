@@ -125,38 +125,6 @@ struct MockChainIK3D {
 		return Vector3();
 	}
 };
-/*
-struct MockChainIK3D {
-	struct BoneJoint {
-		int dummy = 0;
-	};
-
-	Vector<Vector<BoneJoint>> joints;
-
-	void set_setting_count(int count) {
-		joints.resize(count);
-	}
-
-	int get_setting_count() const {
-		return joints.size();
-	}
-
-	void set_joint_count(int p_index, int p_count) {
-		if (p_index >= joints.size()) {
-			joints.resize(p_index + 1);
-		}
-		joints.write[p_index].resize(p_count);
-	}
-
-	int get_joint_count(int p_index) const {
-		if (p_index >= joints.size()) {
-			return 0;
-		}
-
-		return joints[p_index].size();
-	}
-};
-*/
 
 /**
  * Bare bone mock of SurfaceTool to support unit testing of the mock of
