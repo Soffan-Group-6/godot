@@ -28,6 +28,8 @@
 /* SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.                 */
 /**************************************************************************/
 
+#include "tests/branch_coverage.h"
+
 #include "ustring.h"
 
 STATIC_ASSERT_INCOMPLETE_TYPE(class, Array);
@@ -2001,7 +2003,10 @@ CharString String::utf8(Vector<uint8_t> *r_ch_length_map) const {
 
 Error String::append_utf16(const char16_t *p_utf16, int p_len, bool p_default_little_endian) {
 	if (!p_utf16) {
+		hit(2,1);
 		return ERR_INVALID_DATA;
+	} else {
+		hit(2,2);
 	}
 
 	String aux;
@@ -2016,20 +2021,33 @@ Error String::append_utf16(const char16_t *p_utf16, int p_len, bool p_default_li
 #endif
 	/* HANDLE BOM (Byte Order Mark) */
 	if (p_len < 0 || p_len >= 1) {
+		hit(2,3);
 		bool has_bom = false;
 		if (uint16_t(p_utf16[0]) == 0xfeff) { // correct BOM, read as is
+			hit(2,4);
 			has_bom = true;
 			byteswap = false;
 		} else if (uint16_t(p_utf16[0]) == 0xfffe) { // backwards BOM, swap bytes
+			hit(2,5);
 			has_bom = true;
 			byteswap = true;
+		} else {
+			hit(2,6);
 		}
 		if (has_bom) {
+			hit(2,7);
 			if (p_len >= 0) {
+				hit(2,8);
 				p_len -= 1;
+			} else {
+				hit(2,9);
 			}
 			p_utf16 += 1;
+		} else {
+			hit(2,10);
 		}
+	} else {
+		hit(2,11);
 	}
 
 	bool decode_error = false;
@@ -2039,23 +2057,33 @@ Error String::append_utf16(const char16_t *p_utf16, int p_len, bool p_default_li
 		uint32_t c_prev = 0;
 		bool skip = false;
 		while (ptrtmp != ptrtmp_limit && *ptrtmp) {
+			hit(2,12);
+
 			uint32_t c = (byteswap) ? BSWAP16(*ptrtmp) : *ptrtmp;
 
 			if ((c & 0xfffffc00) == 0xd800) { // lead surrogate
+				hit(2,13);
 				if (skip) {
+					hit(2,14);
 					print_unicode_error(vformat("Unpaired lead surrogate (%x [trail?] %x)", c_prev, c));
 					decode_error = true;
+				} else {
+					hit(2,15);
 				}
 				skip = true;
 			} else if ((c & 0xfffffc00) == 0xdc00) { // trail surrogate
+				hit(2,16);
 				if (skip) {
+					hit(2,17);
 					str_size--;
 				} else {
+					hit(2,18);
 					print_unicode_error(vformat("Unpaired trail surrogate (%x [lead?] %x)", c_prev, c));
 					decode_error = true;
 				}
 				skip = false;
 			} else {
+				hit(2,19);
 				skip = false;
 			}
 
@@ -2066,14 +2094,20 @@ Error String::append_utf16(const char16_t *p_utf16, int p_len, bool p_default_li
 		}
 
 		if (skip) {
+			hit(2,20);
 			print_unicode_error(vformat("Unpaired lead surrogate (%x [eol])", c_prev));
 			decode_error = true;
+		} else {
+			hit(2,21);
 		}
 	}
 
 	if (str_size == 0) {
+		hit(2,22);
 		clear();
 		return OK; // empty string
+	} else {
+		hit(2,23);
 	}
 
 	const int prev_length = length();
@@ -2084,21 +2118,30 @@ Error String::append_utf16(const char16_t *p_utf16, int p_len, bool p_default_li
 	bool skip = false;
 	uint32_t c_prev = 0;
 	while (cstr_size) {
+		hit(2,24);
 		uint32_t c = (byteswap) ? BSWAP16(*p_utf16) : *p_utf16;
 
 		if ((c & 0xfffffc00) == 0xd800) { // lead surrogate
+			hit(2,25);
 			if (skip) {
+				hit(2,26);
 				*(dst++) = c_prev; // unpaired, store as is
+			} else {
+				hit(2,27);
 			}
 			skip = true;
 		} else if ((c & 0xfffffc00) == 0xdc00) { // trail surrogate
+			hit(2,28);
 			if (skip) {
+				hit(2,29);
 				*(dst++) = (c_prev << 10UL) + c - ((0xd800 << 10UL) + 0xdc00 - 0x10000); // decode pair
 			} else {
+				hit(2,30);
 				*(dst++) = c; // unpaired, store as is
 			}
 			skip = false;
 		} else {
+			hit(2,31);
 			*(dst++) = c;
 			skip = false;
 		}
@@ -2109,12 +2152,17 @@ Error String::append_utf16(const char16_t *p_utf16, int p_len, bool p_default_li
 	}
 
 	if (skip) {
+		hit(2,32);
 		*(dst++) = c_prev;
+	} else {
+		hit(2,33);
 	}
 
 	if (decode_error) {
+		hit(2,34);
 		return ERR_PARSE_ERROR;
 	} else {
+		hit(2,35);
 		return OK;
 	}
 }
@@ -4145,47 +4193,68 @@ String String::simplify_path() const {
 	int p = s.find("://");
 	bool found = false;
 	if (p > 0) {
+		hit(3,1);
 		bool only_chars = true;
 		for (int i = 0; i < p; i++) {
+			hit(3,2);
 			if (!is_ascii_alphanumeric_char(s[i])) {
+				hit(3,3);
 				only_chars = false;
 				break;
 			}
 		}
 		if (only_chars) {
+			hit(3,4);
 			found = true;
 			drive = s.substr(0, p + 3);
 			s = s.substr(p + 3);
 		}
+	} else {
+		hit(3,5);
 	}
 	if (!found) {
+		hit(3,6);
 		if (is_network_share_path()) {
+			hit(3,7);
 			// Network path, beginning with // or \\.
 			drive = s.substr(0, 2);
 			s = s.substr(2);
 		} else if (s.begins_with("/") || s.begins_with("\\")) {
+			hit(3,8);
 			// Absolute path.
 			drive = s.substr(0, 1);
 			s = s.substr(1);
 		} else {
+			hit(3,9);
 			// Windows-style drive path, like C:/ or C:\.
 			p = s.find(":/");
 			if (p == -1) {
+				hit(3,10);
 				p = s.find(":\\");
+			} else {
+				hit(3,11);
 			}
 			if (p != -1 && p < s.find_char('/')) {
+				hit(3,12);
 				drive = s.substr(0, p + 2);
 				s = s.substr(p + 2);
+			} else {
+				hit(3,13);
 			}
 		}
+	} else {
+		hit(3,14);
 	}
 
 	s = s.replace_char('\\', '/');
 	while (true) { // in case of using 2 or more slash
+		hit(3,15);
 		String compare = s.replace("//", "/");
 		if (s == compare) {
+			hit(3,16);
 			break;
 		} else {
+			hit(3,17);
 			s = compare;
 		}
 	}
@@ -4193,33 +4262,47 @@ String String::simplify_path() const {
 	bool absolute_path = is_absolute_path();
 
 	absolute_path = absolute_path && !begins_with("res://"); // FIXME: Some code (GLTF importer) rely on accessing files up from `res://`, this probably should be disabled in the future.
+	hit(3,18);
 
 	for (int i = 0; i < dirs.size(); i++) {
+		hit(3,19);
 		String d = dirs[i];
 		if (d == ".") {
+			hit(3,20);
 			dirs.remove_at(i);
 			i--;
 		} else if (d == "..") {
+			hit(3,21);
 			if (i != 0 && dirs[i - 1] != "..") {
+				hit(3,22);
 				dirs.remove_at(i);
 				dirs.remove_at(i - 1);
 				i -= 2;
 			} else if (absolute_path && i == 0) {
+				hit(3,23);
 				dirs.remove_at(i);
 				i--;
+			} else {
+				hit(3,24);
 			}
+		} else {
+			hit(3,25);
 		}
 	}
 
 	s = "";
 
 	for (int i = 0; i < dirs.size(); i++) {
+		hit(3,26);
 		if (i > 0) {
+			hit(3,27);
 			s += "/";
+		} else {
+			hit(3,28);
 		}
 		s += dirs[i];
 	}
-
+	hit(3,29);
 	return drive + s;
 }
 

@@ -232,7 +232,12 @@
 
 #include "servers/rendering/rendering_server_default.h"
 
-int test_main(int argc, char *argv[]) {
+#include "branch_coverage.h" // IMPORT CODE COVERAGE
+
+int test_main(int argc, char *argv[])
+{
+	init_coverage(); // Initialize coverage
+
 	bool run_tests = true;
 
 	// Convert arguments to Godot's command-line.
@@ -301,7 +306,9 @@ int test_main(int argc, char *argv[]) {
 		delete[] doctest_args;
 	}
 
-	return test_context.run();
+	int result = test_context.run();
+	print_coverage();
+	return result;
 }
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
